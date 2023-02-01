@@ -24,6 +24,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 updater = Updater(token = Config.BOT_TOKEN, use_context=True)
 dp = updater.dispatcher
+browser = driver
 
 proxylist = [
     "192.99.101.142:7497",
@@ -57,28 +58,53 @@ proxylist = [
     "5.161.93.53:1080",
     "165.225.8.100:10605",
 ]
+warnings.filterwarnings('ignore')
 
-if True:
+fake = [
+'David Asir',
+'Mohammed UAE',
+'Victor Sam',
+'SENTHILKUMAR DUBAI',
+'Tamilarasan',
+'NAWAZ KHALEEL',
+'Samimii',
+'PEER MOHAMMAD',
+'L Krishnakumar',
+'Yuvanathan',
+'MANJU',
+'Muthubabu',
+'Christopher Asir Dass',
+'KITTY',
+'Prabhakar',]
 
-  user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.74 Safari/537.36"
-  options = webdriver.ChromeOptions()
-  options.headless = True
-  options.add_argument(f'user-agent={user_agent}')
-  options.add_experimental_option("detach", True)
-  options.add_argument("--window-size=1920,1080")
-  options.add_argument("--allow-file-access-from-files")
-  options.add_argument('--no-sandbox')
-  options.add_argument('--disable-dev-shm-usage')
-  options.add_argument('--use-fake-device-for-media-stream')
-  options.add_argument('--use-fake-ui-for-media-stream')
-  options.add_argument("--disable-infobars")
-  options.add_argument('--ignore-certificate-errors')
-  options.add_argument('--allow-running-insecure-content')
-  options.add_argument("--disable-extensions")
-  options.add_argument("--proxy-server='direct://'")
-  options.add_argument("--proxy-bypass-list=*")
-  options.add_argument("--use-fake-device-for-media-stream")
-  options.add_argument("--start-maximized")
+MUTEX = threading.Lock()
+
+
+def sync_print(text):
+    with MUTEX:
+        print(text)
+
+def get_driver(proxy):
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.5414.74 Safari/537.36"
+    options = webdriver.ChromeOptions()
+    options.headless = True
+    options.add_argument(f'user-agent={user_agent}')
+    options.add_experimental_option("detach", True)
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument("--disable-infobars")
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--allow-running-insecure-content')
+    options.add_argument("--disable-extensions")
+    options.add_argument("--proxy-server='direct://'")
+    options.add_argument("--proxy-bypass-list=*")
+    options.add_argument("--use-fake-device-for-media-stream")
+    options.add_argument("--start-maximized")
+    if proxy is not None:
+        options.add_argument(f"--proxy-server={proxy}")
+    driver = webdriver.Chrome(options=options)
+    return driver
 
 browser = webdriver.Chrome(options=options)
 logged_in=False
@@ -109,8 +135,13 @@ def status(update, context):
 
 	except:
 		context.bot.send_message(chat_id=update.message.chat_id, text="please /restart your bot🤖 to get status")
+		
+def driver_wait(driver, locator, by, secs=1, condition=ec.element_to_be_clickable):
+    wait = WebDriverWait(driver=driver, timeout=secs)
+    element = wait.until(condition((by, locator)))
+    return element
 	
-def zoom(update, context):
+def zoom(update, context,name, proxy, user, wait_time):
 	logging.info("DOING")
 	try:
 		context.bot.send_chat_action(chat_id=update.message.chat_id, action=ChatAction.TYPING)
@@ -133,12 +164,21 @@ def zoom(update, context):
 		mid  = context.bot.send_photo(chat_id=update.message.chat_id, photo=open('ss.png', 'rb'), caption="Test", timeout = 120).message_id
 		os.remove('ss.png')
 		time.sleep(5)
-		browser.find_element_by_xpath('//*[@id="inputname"]').send_keys(user)
-		time.sleep(5)
-		browser.find_element_by_xpath('//*[@id="inputpasscode"]').send_keys(passStr)
-		browser.find_element_by_xpath('//*[@id="joinBtn"]').click()
-		time.sleep(5)
-		browser.find_element_by_xpath('//*[@id="root"]/div/div[1]/button').click()
+		inp = driver.find_element(By.ID, 'inputname')
+                time.sleep(1)
+                inp.send_keys(f"{user}")
+                btn2 = driver.find_element(By.ID, 'joinBtn')
+   		btn2.click()
+    		time.sleep(2)
+    		inp2 = driver.find_element(By.ID, 'inputpasscode')
+    		time.sleep(1)
+    		inp2.send_keys(passcode)
+    		btn3 = driver.find_element(By.ID, 'joinBtn')
+    		time.sleep(1)
+    		btn3.click()
+    		sync_print(f"{name} sleep for {wait_time} seconds ...")
+    		time.sleep(wait_time)
+    		sync_print(f"{name} ended!")
 		
 		
 
@@ -192,7 +232,27 @@ def exitmeet(update,context):
 def start(update,context):
 	context.bot.send_message(chat_id=update.message.chat_id,text="Use following Commands to interact with bot :\nTo join zoom meeting - /zoom zoommeetingid password\nTo know Status of Bot - /status\nTo exit meet - /exitmeet\nTo restart Bot🤖 - /restart")
 	
-!retry again.")
+	
+def __init__():
+    wait_time = sec * 60
+    workers = []
+    for i in range(number):
+        fakes = fake[i]
+        try:
+            proxy = proxylist[i]
+        except IndexError:
+            proxy = None
+        try:
+            user = fakes
+        except IndexError:
+            break
+        wk = threading.Thread(target=start, args=(
+            f'[Thread{i}]', proxy, user, wait_time))
+        workers.append(wk)
+    for wk in workers:
+        wk.start()
+    for wk in workers:
+        wk.join()	
 
 def main():
 	import os
